@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import AdminReservationForm from "@/components/admin/AdminReservationForm";
 
@@ -7,6 +8,7 @@ export default function AdminNuevaReservaPage() {
       <div className="mx-auto grid max-w-[1440px] gap-4">
         <header className="relative overflow-hidden rounded-[1.35rem] bg-slate-950 px-6 py-5 text-white shadow-xl shadow-cyan-950/10">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(34,211,238,0.28),transparent_30%),radial-gradient(circle_at_88%_0%,rgba(45,212,191,0.22),transparent_28%)]" />
+      </Suspense>
 
           <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -30,6 +32,7 @@ export default function AdminNuevaReservaPage() {
           </div>
         </header>
 
+        <Suspense fallback={<div className="rounded-[1.35rem] bg-white p-8 text-center font-black text-slate-700 shadow-xl shadow-cyan-950/5">Cargando formulario...</div>}>
         <AdminReservationForm />
       </div>
     </main>

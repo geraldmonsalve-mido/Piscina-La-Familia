@@ -16,3 +16,13 @@ _backup_restore_*
 
 # macOS metadata
 ._*
+
+# Backups temporales
+_backup_*
+_backup_restore_*
+*_backup_*
+*.tsbuildinfo
+
+# macOS metadata
+._*
+.DS_Store
