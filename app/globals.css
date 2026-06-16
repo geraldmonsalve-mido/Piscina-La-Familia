@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  /* Paleta Pool (azul piscina) */
+  --color-pool-50:  #eff8ff;
+  --color-pool-100: #daeeff;
+  --color-pool-200: #bde0ff;
+  --color-pool-300: #90ccff;
+  --color-pool-400: #5aaffd;
+  --color-pool-500: #3391fa;
+  --color-pool-600: #1d72ef;
+  --color-pool-700: #155ddc;
+  --color-pool-800: #1749b2;
+  --color-pool-900: #19408d;
+  --color-pool-950: #142956;
+
+  /* Paleta Agua (turquesa) */
+  --color-agua-50:  #ecfeff;
+  --color-agua-100: #cffafe;
+  --color-agua-200: #a5f3fc;
+  --color-agua-300: #67e8f9;
+  --color-agua-400: #22d3ee;
+  --color-agua-500: #06b6d4;
+  --color-agua-600: #0891b2;
+  --color-agua-700: #0e7490;
+  --color-agua-800: #155e75;
+  --color-agua-900: #164e63;
+
+  /* Paleta Sol (dorado cálido) */
+  --color-sol-50:  #fffbeb;
+  --color-sol-100: #fef3c7;
+  --color-sol-200: #fde68a;
+  --color-sol-300: #fcd34d;
+  --color-sol-400: #fbbf24;
+  --color-sol-500: #f59e0b;
+  --color-sol-600: #d97706;
+
+  /* Tipografía */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0c1b33;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+:focus-visible {
+  outline: 2px solid theme(--color-pool-500);
+  outline-offset: 2px;
+}
