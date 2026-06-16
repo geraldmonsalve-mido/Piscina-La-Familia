@@ -8,3 +8,11 @@ node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Backups temporales
+_backup_*
+_backup_restore_*
+*.tsbuildinfo
+
+# macOS metadata
+._*
