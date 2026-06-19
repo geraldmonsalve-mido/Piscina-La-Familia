@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 
@@ -139,7 +140,7 @@ export default function HomePage() {
         <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto pt-20">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 text-sm text-white/90 mb-6">
             <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-            2 sedes disponibles en el Zulia
+            Horarios disponibles hoy
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
@@ -234,34 +235,37 @@ export default function HomePage() {
             {[
               {
                 name: "Sierra Maestra",
+                slug: "sierra-maestra",
                 location: "San Francisco, Zulia",
                 address: "Calle 22 entre Av. 10 y 12",
                 phone: "0412-549-7463",
                 capacity: 50,
                 amenities: ["Parrilleras", "Vestuarios", "Estacionamiento", "Área infantil", "WiFi"],
-                color: "from-pool-500 to-pool-700",
+                image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=80",
               },
               {
                 name: "Los Cortijos",
+                slug: "los-cortijos",
                 location: "Maracaibo, Zulia",
                 address: "Kilómetro 12, Los Cortijos",
                 phone: "0412-105-5663",
                 capacity: 50,
                 amenities: ["Parrilleras", "Vestuarios", "Estacionamiento amplio", "Área de eventos", "Rancho techado"],
-                color: "from-agua-500 to-agua-700",
+                image: "https://images.unsplash.com/photo-1560185127-6ed189bf02f4?w=800&q=80",
               },
             ].map((sede) => (
               <div
                 key={sede.name}
-                className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100"
+                className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow"
               >
-                {/* Imagen placeholder */}
-                <div
-                  className={`h-48 bg-gradient-to-br ${sede.color} flex items-center justify-center`}
-                >
-                  <svg className="size-16 text-white/50" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M2 18c1.5 0 2.5-1 4-1s2.5 1 4 1 2.5-1 4-1 2.5 1 4 1v2c-1.5 0-2.5-1-4-1s-2.5 1-4 1-2.5-1-4-1-2.5 1-4 1v-2zm0-4c1.5 0 2.5-1 4-1s2.5 1 4 1 2.5-1 4-1 2.5 1 4 1v2c-1.5 0-2.5-1-4-1s-2.5 1-4 1-2.5-1-4-1-2.5 1-4 1v-2zm8-10a4 4 0 110 8 4 4 0 010-8z" />
-                  </svg>
+                <div className="relative h-48 overflow-hidden">
+                  <Image
+                    src={sede.image}
+                    alt={`Piscina ${sede.name}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
                 </div>
 
                 <div className="p-6">
@@ -308,9 +312,9 @@ export default function HomePage() {
                     ))}
                   </div>
 
-                  <Link href={`/reservar?sede=${encodeURIComponent(sede.name)}`}>
+                  <Link href={`/reservar?sede=${sede.slug}`}>
                     <Button fullWidth variant="outline">
-                      Solicitar en {sede.name}
+                      Reservar en {sede.name}
                     </Button>
                   </Link>
                 </div>

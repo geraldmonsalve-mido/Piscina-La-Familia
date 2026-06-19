@@ -127,7 +127,7 @@ export default function Header() {
                 onClick={() => setOpen(false)}
                 className="rounded-2xl bg-cyan-300 px-4 py-3 text-center text-sm font-black text-slate-950"
               >
-                Solicitar
+                Reservar
               </Link>
             </div>
           </div>

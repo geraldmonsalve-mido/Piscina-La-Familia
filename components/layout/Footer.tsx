@@ -38,7 +38,7 @@ export default function Footer() {
               <li>Los Cortijos: 0412-105-5663</li>
               <li>
                 <a
-                  href="https://wa.me/584125497463"
+                  href="https://wa.me/584125497463?text=Hola!%20Quiero%20reservar%20en%20Piscina%20La%20Familia"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex rounded-2xl bg-emerald-400 px-4 py-2 font-black text-slate-950 hover:bg-emerald-300"

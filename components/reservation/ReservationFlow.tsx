@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Location, ReservationType, TimeBlock } from "@/lib/types";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -31,6 +32,7 @@ interface Props {
   locations: Location[];
   reservationTypes?: ReservationType[];
   types?: ReservationType[];
+  initialLocationId?: string;
 }
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -58,14 +60,20 @@ export default function ReservationFlow({
   locations,
   reservationTypes,
   types,
+  initialLocationId,
 }: Props) {
   const availableTypes = useMemo(
     () => reservationTypes ?? types ?? [],
     [reservationTypes, types]
   );
 
+  const initialLocation = useMemo(
+    () => (initialLocationId ? (locations.find((l) => l.id === initialLocationId) ?? null) : null),
+    [initialLocationId, locations]
+  );
+
   const [step, setStep] = useState<Step>(1);
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(initialLocation);
   const [selectedType, setSelectedType] = useState<ReservationType | null>(null);
   const [date, setDate] = useState("");
   const [blocks, setBlocks] = useState<TimeBlock[]>([]);
@@ -76,6 +84,9 @@ export default function ReservationFlow({
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     if (!selectedLocation || !date) {
@@ -527,23 +538,50 @@ export default function ReservationFlow({
             </dl>
           </div>
 
+          {submitError && (
+            <div className="mt-5 rounded-2xl bg-rose-50 border border-rose-200 p-4 text-sm font-bold text-rose-800">
+              {submitError}
+            </div>
+          )}
+
           <div className="mt-8 flex justify-between">
-            <Button variant="secondary" onClick={goBack}>
+            <Button variant="secondary" onClick={goBack} disabled={submitting}>
               Volver
             </Button>
             <Button
-              onClick={() => {
-                const message = encodeURIComponent(
-                  `Hola, quiero reservar Piscina La Familia.%0A%0ASede: ${selectedLocation?.name}%0ATipo: ${selectedType?.name}%0AFecha: ${dayLabel(date)}%0ATurno: ${
-                    selectedBlock
-                      ? `${formatTime(selectedBlock.start_time)} - ${formatTime(selectedBlock.end_time)}`
-                      : ""
-                  }%0AAsistentes: ${guestNumber}%0ANombre: ${name}%0ANotas: ${notes || "Sin notas"}`
-                );
-                window.open(`https://wa.me/584125497463?text=${message}`, "_blank");
+              disabled={submitting}
+              onClick={async () => {
+                setSubmitting(true);
+                setSubmitError("");
+                try {
+                  const res = await fetch("/api/reservations", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      location: selectedLocation,
+                      reservationType: selectedType,
+                      timeBlock: selectedBlock,
+                      date,
+                      numAdults: guestNumber,
+                      numChildren: 0,
+                      guests: guestNumber,
+                      guestName: name,
+                      customerName: name,
+                      guestPhone: phone,
+                      customerPhone: phone,
+                      notes,
+                    }),
+                  });
+                  const json = await res.json();
+                  if (!res.ok) throw new Error(json.error || "No pudimos crear la reserva.");
+                  router.push(`/reservar/confirmacion/${json.id}`);
+                } catch (err) {
+                  setSubmitError(err instanceof Error ? err.message : "Error desconocido. Intenta de nuevo.");
+                  setSubmitting(false);
+                }
               }}
             >
-              Enviar por WhatsApp
+              {submitting ? "Reservando..." : "Confirmar reserva"}
             </Button>
           </div>
         </section>

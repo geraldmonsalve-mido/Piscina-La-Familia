@@ -8,15 +8,16 @@ export const metadata = {
 
 type Reservation = {
   id: string;
-  code?: string;
-  date?: string;
-  start_time?: string;
-  end_time?: string;
+  qr_code?: string;
+  reservation_date?: string;
   status?: string;
-  payment_status?: string;
-  total_amount?: number;
+  total_price?: number;
   location?: {
     name?: string;
+  };
+  time_block?: {
+    start_time?: string;
+    end_time?: string;
   };
 };
 
@@ -73,7 +74,7 @@ export default async function CuentaPage() {
 
   const isAdmin =
     role === "admin" ||
-    role === "superadmin" ||
+    role === "staff" ||
     user.email === "gerald.monsalve@gmail.com";
 
   let reservations: Reservation[] = [];
@@ -81,8 +82,8 @@ export default async function CuentaPage() {
   try {
     const { data } = await supabase
       .from("reservations")
-      .select("*")
-      .eq("customer_id", user.id)
+      .select("id, qr_code, reservation_date, status, total_price, location:locations(name), time_block:time_blocks(start_time, end_time)")
+      .eq("profile_id", user.id)
       .order("created_at", { ascending: false })
       .limit(6);
 
@@ -273,15 +274,15 @@ export default async function CuentaPage() {
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-700">
-                        {reservation.code || "Reserva"}
+                        {reservation.qr_code || "Reserva"}
                       </p>
                       <h3 className="mt-2 text-xl font-black text-slate-950">
                         {reservation.location?.name || "Piscina La Familia"}
                       </h3>
                       <p className="mt-1 text-sm text-slate-500">
-                        {formatDate(reservation.date)} ·{" "}
-                        {formatTime(reservation.start_time)} -{" "}
-                        {formatTime(reservation.end_time)}
+                        {formatDate(reservation.reservation_date)} ·{" "}
+                        {formatTime(reservation.time_block?.start_time)} -{" "}
+                        {formatTime(reservation.time_block?.end_time)}
                       </p>
                     </div>
 
@@ -289,9 +290,11 @@ export default async function CuentaPage() {
                       <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-bold text-cyan-800">
                         {reservation.status || "pendiente"}
                       </span>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                        {reservation.payment_status || "sin pago"}
-                      </span>
+                      {reservation.total_price != null && reservation.total_price > 0 && (
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                          ${reservation.total_price}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </Link>

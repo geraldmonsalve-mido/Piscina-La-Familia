@@ -6,7 +6,12 @@ export const metadata = {
   description: "Reserva una piscina privada por turnos.",
 };
 
-export default function ReservarPage() {
+export default async function ReservarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sede?: string }>;
+}) {
+  const { sede } = await searchParams;
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#f6fbff] pt-24">
       <div className="absolute inset-x-0 top-0 h-[430px] bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.38),transparent_48%),linear-gradient(135deg,#06224a,#0b6f88_52%,#0f766e)]" />
@@ -43,7 +48,7 @@ export default function ReservarPage() {
         </div>
 
         <div className="relative mx-auto mt-12 max-w-5xl rounded-[2rem] border border-white/70 bg-white/95 p-4 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl sm:p-8">
-          <ReservationFlow locations={locations} reservationTypes={reservationTypes} />
+          <ReservationFlow locations={locations} reservationTypes={reservationTypes} initialLocationId={sede} />
         </div>
       </section>
     </main>

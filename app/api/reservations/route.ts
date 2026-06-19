@@ -20,20 +20,24 @@ export async function POST(request: Request) {
 
   const supabase = await createClient();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  const profileId = user?.id ?? null;
+
   if (requiresQuote || !timeBlockId) {
-    const { error } = await supabase.from("quote_requests").insert({
+    const { data: inserted, error } = await supabase.from("quote_requests").insert({
+      profile_id: profileId,
       location_id: locationId,
       reservation_type_id: reservationTypeId,
-      name: body.guestName || "Cliente sin nombre",
-      email: body.guestEmail || "sin-email@piscinalafamilia.local",
-      phone: body.guestPhone || "Sin teléfono",
+      name: body.guestName || body.customerName || "Cliente sin nombre",
+      email: body.guestEmail || body.customerEmail || "sin-email@piscinalafamilia.local",
+      phone: body.guestPhone || body.customerPhone || "Sin teléfono",
       event_date: body.date || null,
-      num_guests: Number(body.numAdults ?? 0) + Number(body.numChildren ?? 0),
+      num_guests: Number(body.numAdults ?? body.guests ?? 0) + Number(body.numChildren ?? 0),
       event_details: body.notes || null,
       status: "pending",
-    });
+    }).select("id").single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ code, quote: true });
+    return NextResponse.json({ code, id: inserted.id, quote: true });
   }
 
   const { data: existing } = await supabase
@@ -49,21 +53,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Ese bloque horario ya tiene una reserva en proceso." }, { status: 409 });
   }
 
-  const { error } = await supabase.from("reservations").insert({
+  const { data: inserted, error } = await supabase.from("reservations").insert({
+    profile_id: profileId,
     location_id: locationId,
     reservation_type_id: reservationTypeId,
     time_block_id: timeBlockId,
     reservation_date: body.date,
-    num_adults: Number(body.numAdults ?? 1),
+    num_adults: Number(body.numAdults ?? body.guests ?? 1),
     num_children: Number(body.numChildren ?? 0),
     total_price: Number(body.timeBlock?.price ?? body.reservationType?.price_base ?? 0),
     status: "pending",
-    notes: [body.notes, `Contacto: ${body.guestName || ""} / ${body.guestPhone || ""} / ${body.guestEmail || ""}`]
+    notes: [body.notes, body.guestName || body.customerName ? `Contacto: ${body.guestName || body.customerName} / ${body.guestPhone || body.customerPhone || ""}` : ""]
       .filter(Boolean)
       .join("\n"),
     qr_code: code,
-  });
+  }).select("id").single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ code, quote: false });
+  return NextResponse.json({ code, id: inserted.id, quote: false });
 }

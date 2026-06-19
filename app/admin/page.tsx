@@ -1,11 +1,7 @@
 import Link from "next/link";
 import AdminBadge from "@/components/admin/AdminBadge";
-import {
-  demoLeads,
-  demoReservations,
-  locations,
-  statusTone,
-} from "@/lib/admin-demo-data";
+import { createServiceClient } from "@/lib/supabase/server";
+import { locations, statusTone } from "@/lib/admin-demo-data";
 
 function percent(value: number, total: number) {
   if (!total) return 0;
@@ -43,20 +39,53 @@ const quickActions = [
   { href: "/admin/ingresos", label: "Ingresos", hint: "Caja", tone: "emerald" },
 ];
 
-export default function AdminDashboardPage() {
-  const totalRevenue = demoReservations.reduce((sum, item) => sum + item.total, 0);
-  const paidRevenue = demoReservations
-    .filter((item) => item.payment === "paid")
-    .reduce((sum, item) => sum + item.total, 0);
-  const pendingRevenue = totalRevenue - paidRevenue;
+type LiveReservation = {
+  id: string;
+  qr_code: string | null;
+  reservation_date: string;
+  num_adults: number;
+  num_children: number;
+  total_price: number;
+  status: string;
+  notes: string | null;
+  location_id: string;
+  location?: { name: string } | null;
+  time_block?: { start_time: string; end_time: string } | null;
+};
 
-  const pendingReservations = demoReservations.filter((item) => item.status === "pending").length;
-  const confirmedReservations = demoReservations.filter((item) => item.status === "confirmed").length;
-  const conversionRate = percent(confirmedReservations, demoReservations.length);
+async function getLiveReservations(): Promise<{ reservations: LiveReservation[]; error?: string }> {
+  try {
+    const supabase = await createServiceClient();
+    const { data, error } = await supabase
+      .from("reservations")
+      .select("id, qr_code, reservation_date, num_adults, num_children, total_price, status, notes, location_id, location:locations(name), time_block:time_blocks(start_time, end_time)")
+      .not("status", "eq", "cancelled")
+      .order("reservation_date", { ascending: true })
+      .limit(20);
 
-  const sierraCount = demoReservations.filter((item) => item.locationId === "sierra-maestra").length;
-  const cortijosCount = demoReservations.filter((item) => item.locationId === "los-cortijos").length;
-  const totalReservations = demoReservations.length || 1;
+    if (error) return { reservations: [], error: error.message };
+    return { reservations: (data || []) as unknown as LiveReservation[] };
+  } catch (err) {
+    return { reservations: [], error: err instanceof Error ? err.message : "Error de conexión" };
+  }
+}
+
+export default async function AdminDashboardPage() {
+  const { reservations: liveReservations, error: liveError } = await getLiveReservations();
+
+  const totalRevenue = liveReservations.reduce((sum, item) => sum + Number(item.total_price || 0), 0);
+  const pendingRevenue = liveReservations
+    .filter((item) => item.status === "pending")
+    .reduce((sum, item) => sum + Number(item.total_price || 0), 0);
+  const paidRevenue = totalRevenue - pendingRevenue;
+
+  const pendingReservations = liveReservations.filter((item) => item.status === "pending").length;
+  const confirmedReservations = liveReservations.filter((item) => item.status === "confirmed").length;
+  const conversionRate = percent(confirmedReservations, liveReservations.length);
+
+  const sierraCount = liveReservations.filter((item) => item.location_id === "sierra-maestra" || (item.location as any)?.name === "Sierra Maestra").length;
+  const cortijosCount = liveReservations.filter((item) => item.location_id === "los-cortijos" || (item.location as any)?.name === "Los Cortijos").length;
+  const totalReservations = liveReservations.length || 1;
   const maxRevenue = Math.max(...revenueTrend.map((item) => item.value));
   const peakOccupancy = Math.max(...occupancyTrend.map((item) => item.value));
 
@@ -137,7 +166,7 @@ export default function AdminDashboardPage() {
               <AdminBadge tone="cyan">{conversionRate}%</AdminBadge>
             </div>
             <p className="mt-3 text-3xl font-black leading-none text-slate-950">
-              {confirmedReservations}/{demoReservations.length}
+              {confirmedReservations}/{liveReservations.length}
             </p>
             <p className="mt-3 text-xs font-bold text-slate-500">
               Reservas confirmadas vs. solicitudes activas
@@ -199,7 +228,20 @@ export default function AdminDashboardPage() {
               </div>
 
               <div className="divide-y divide-slate-100">
-                {demoReservations.map((reservation) => (
+                {liveError && (
+                  <div className="px-5 py-4 text-sm font-bold text-rose-700">
+                    Error Supabase: {liveError}
+                  </div>
+                )}
+                {!liveError && liveReservations.length === 0 && (
+                  <div className="px-5 py-10 text-center">
+                    <p className="text-sm font-bold text-slate-400">No hay reservas todavía</p>
+                    <Link href="/admin/reservas/nueva" className="mt-3 inline-flex rounded-2xl bg-cyan-50 px-4 py-2 text-sm font-black text-cyan-800 hover:bg-cyan-100">
+                      Crear primera reserva
+                    </Link>
+                  </div>
+                )}
+                {liveReservations.map((reservation) => (
                   <Link
                     key={reservation.id}
                     href={`/admin/reservas/${reservation.id}`}
@@ -207,37 +249,34 @@ export default function AdminDashboardPage() {
                   >
                     <div>
                       <p className="text-[11px] font-black uppercase tracking-[0.2em] text-cyan-700">
-                        {reservation.code}
+                        {reservation.qr_code ?? reservation.id.slice(0, 8).toUpperCase()}
                       </p>
                       <p className="mt-1 text-xs font-bold text-slate-500">
-                        {reservation.date.slice(5)}
+                        {reservation.reservation_date?.slice(5) ?? ""}
                       </p>
                     </div>
 
                     <div className="min-w-0">
                       <h3 className="truncate text-base font-black text-slate-950">
-                        {reservation.customer}
+                        {(reservation.location as any)?.name ?? "Sin sede"}
                       </h3>
                       <p className="truncate text-sm text-slate-500">
-                        {reservation.location} · {reservation.turn}
+                        {reservation.num_adults + reservation.num_children} pax
+                        {(reservation.time_block as any)?.start_time
+                          ? ` · ${(reservation.time_block as any).start_time.slice(0, 5)}`
+                          : ""}
                       </p>
                     </div>
 
                     <div className="lg:text-right">
                       <p className="text-lg font-black text-slate-950">
-                        ${reservation.total}
-                      </p>
-                      <p className="text-xs font-bold text-slate-400">
-                        {reservation.guests} pax
+                        ${reservation.total_price}
                       </p>
                     </div>
 
                     <div className="flex flex-wrap gap-2 lg:justify-end">
                       <AdminBadge tone={statusTone(reservation.status)}>
                         {reservation.status}
-                      </AdminBadge>
-                      <AdminBadge tone={statusTone(reservation.payment)}>
-                        {reservation.payment}
                       </AdminBadge>
                     </div>
                   </Link>
@@ -359,7 +398,7 @@ export default function AdminDashboardPage() {
               </div>
 
               <div className="grid gap-2 p-4">
-                {locations.map((location) => {
+                {locations.map((location: { id: string; name: string; address: string }) => {
                   const count = location.id === "sierra-maestra" ? sierraCount : cortijosCount;
                   const share = percent(count, totalReservations);
 
@@ -416,8 +455,8 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm text-cyan-50/70">Leads abiertos</span>
-                  <span className="font-black">{demoLeads.length}</span>
+                  <span className="text-sm text-cyan-50/70">Reservas activas</span>
+                  <span className="font-black">{liveReservations.length}</span>
                 </div>
 
                 <div className="rounded-2xl bg-white/8 p-3">
